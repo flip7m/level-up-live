@@ -1,0 +1,27 @@
+.frequency-bars-container {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(135deg, #1a1332 0%, #2d1b4e 100%);
+  border: 1px solid #4c1d95;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin: 20px 0;
+}
+
+.frequency-bars-canvas {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+@media (max-width: 640px) {
+  .frequency-bars-container {
+    height: 120px;
+    padding: 12px;
+  }
+}

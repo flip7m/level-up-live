@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(cat:*)",
+      "Bash(npm run db:migrate:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(timeout 15 npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(curl:*)",
+      "Bash(python -c \"import os; os.system(''''taskkill /F /PID 32780'''')\")",
+      "Bash(powershell -Command \"Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(npm run db:reset:*)",
+      "Bash(pkill:*)",
+      "Bash(powershell -Command \"Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force ; Write-Host ''All processes killed''\")",
+      "Bash(powershell -Command \"Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force ; Write-Host ''All node processes stopped''\")",
+      "Bash(npm run db:seed:*)",
+      "Bash(dir:*)",
+      "Bash(npm run docker:up:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker-compose:*)",
+      "Bash(psql -h localhost -p 8010 -U levelup_user -d levelup_live -c \"DELETE FROM levels;\")",
+      "Bash(tsx:*)",
+      "Bash(npx tsx:*)",
+      "Bash(psql:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 10 bash:*)",
+      "Bash(timeout 5 bash:*)",
+      "Bash(powershell -Command \"Get-Content ''d:\\level-up-live\\data\\logs\\app.log'' -Tail 200 | Select-String -Pattern ''Emitting sound|sound:|SoundService|playXPGainSound|playDropSound|playBuildUpSound|playViewerJoinSound''\")",
+      "Bash(docker exec:*)",
+      "Bash(powershell -Command \"Get-Content ''d:\\level-up-live\\data\\logs\\app.log'' -Tail 100 | Select-String -Pattern ''LEVEL UP|Level up|level:up|XPService''\")",
+      "Bash(powershell -Command \"Get-Content ''d:\\level-up-live\\data\\logs\\app.log'' -Tail 500 | Select-String -Pattern ''XP|Level created|Level deleted|Level updated''\")",
+      "Bash(timeout 10 npm run dev:server:*)",
+      "Bash(npm run dev:server:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,164 @@
+.level-indicator-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #2d1b4e 0%, #1a1332 100%);
+  border: 2px solid #8b5cf6;
+  border-radius: 16px;
+}
+
+.level-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.8), inset 0 0 12px rgba(255, 255, 255, 0.2);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.level-badge::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6, #ec4899);
+  z-index: -1;
+  animation: level-pulse 3s ease-in-out infinite;
+}
+
+@keyframes level-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.trophy-icon {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  color: #fbbf24;
+  filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.6));
+  top: 8px;
+}
+
+.level-number {
+  font-size: 42px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 12px rgba(139, 92, 246, 0.6);
+  margin-top: 4px;
+}
+
+.level-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.level-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a78bfa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.level-title {
+  font-size: 24px;
+  font-weight: 900;
+  color: #ec4899;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(236, 72, 153, 0.4);
+}
+
+.level-threshold {
+  font-size: 12px;
+  font-weight: 600;
+  color: #a78bfa;
+  margin-top: 2px;
+}
+
+.combo-display {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 8px 12px;
+  background: rgba(236, 72, 153, 0.1);
+  border-left: 3px solid #ec4899;
+  border-radius: 4px;
+}
+
+.combo-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #a78bfa;
+  text-transform: uppercase;
+}
+
+.combo-value {
+  font-size: 14px;
+  font-weight: 900;
+  color: #ec4899;
+  font-family: monospace;
+}
+
+@media (max-width: 768px) {
+  .level-indicator-container {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .level-badge {
+    width: 64px;
+    height: 64px;
+  }
+
+  .trophy-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .level-number {
+    font-size: 32px;
+  }
+
+  .level-title {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .level-indicator-container {
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .level-info {
+    gap: 2px;
+  }
+
+  .level-badge {
+    width: 56px;
+    height: 56px;
+  }
+
+  .level-number {
+    font-size: 24px;
+  }
+
+  .level-title {
+    font-size: 16px;
+  }
+}

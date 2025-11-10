@@ -1,0 +1,39 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  body {
+    @apply bg-surface-dark text-primary-100 antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-surface-light;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary-600 rounded-full hover:bg-primary-500;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors;
+  }
+
+  .card-dark {
+    @apply bg-surface-light border border-primary-900 rounded-lg;
+  }
+
+  .input-dark {
+    @apply bg-surface-light border border-primary-800 text-primary-100 rounded-lg px-3 py-2;
+  }
+}
+
+* {
+  @apply transition-colors duration-200;
+}

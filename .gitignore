@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+yarn.lock
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+data/logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+data/app.db
+data/*.db
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
