@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: levelup-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-levelup_live}
+      POSTGRES_USER: ${POSTGRES_USER:-levelup_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-levelup_dev_2024}
+    ports:
+      - "8010:5432"
+    volumes:
+      - levelup-postgres-data:/var/lib/postgresql/data
+    networks:
+      - levelup-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-levelup_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  levelup-postgres-data:
+    driver: local
+
+networks:
+  levelup-network:
+    driver: bridge

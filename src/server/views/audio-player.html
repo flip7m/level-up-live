@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level Up Live - Audio Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0F0A1E 0%, #1A1332 100%);
+            color: #E9D5FF;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+            border-top: 2px solid rgba(139, 92, 246, 0.4);
+            border-radius: 0;
+            padding: 16px 40px;
+            max-width: 100%;
+            width: 100%;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        h1 {
+            display: none;
+        }
+
+        .status {
+            display: none;
+        }
+
+        .player-section {
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .now-playing {
+            text-align: center;
+            margin-bottom: 0;
+            min-width: 300px;
+        }
+
+        .now-playing label {
+            display: none;
+        }
+
+        .now-playing .song-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .now-playing .song-artist {
+            font-size: 11px;
+            color: #A78BFA;
+        }
+
+        audio {
+            width: 300px;
+            margin: 0;
+            cursor: pointer;
+            height: 28px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 0;
+        }
+
+        button {
+            flex: 1;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 80px;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .playlist-section {
+            display: none;
+        }
+
+        .playlist-section label {
+            display: none;
+        }
+
+        .playlist-list {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .playlist-item {
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .playlist-item:hover {
+            background: rgba(139, 92, 246, 0.2);
+        }
+
+        .playlist-item.playing {
+            background: rgba(139, 92, 246, 0.4);
+            font-weight: 600;
+            color: #EC4899;
+        }
+
+        .playlist-item-title {
+            font-weight: 500;
+        }
+
+        .playlist-item-artist {
+            font-size: 11px;
+            color: #A78BFA;
+            margin-top: 2px;
+        }
+
+        .info {
+            background: rgba(236, 72, 153, 0.1);
+            border: 1px solid rgba(236, 72, 153, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 12px;
+            color: #A78BFA;
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Level Up Live</h1>
+        <div class="status">Reprodutor de Áudio em Loop</div>
+
+        <div class="player-section">
+            <div class="now-playing">
+                <label>Reproduzindo agora</label>
+                <div class="song-title" id="songTitle">Aguardando...</div>
+                <div class="song-artist" id="songArtist">-</div>
+            </div>
+
+            <audio id="audioPlayer" controls loop style="width: 100%; height: 40px;"></audio>
+
+            <div class="controls">
+                <button id="prevBtn">⏮ Anterior</button>
+                <button id="nextBtn">Próximo ⏭</button>
+            </div>
+        </div>
+
+        <div class="playlist-section">
+            <label>Playlist</label>
+            <div class="playlist-list" id="playlistContainer">
+                <div class="playlist-item">Carregando...</div>
+            </div>
+        </div>
+
+        <div class="info">
+            ✅ Áudio em loop contínuo para captura by PulseAudio
+        </div>
+    </div>
+
+    <script>
+        const audioPlayer = document.getElementById('audioPlayer')
+        const songTitle = document.getElementById('songTitle')
+        const songArtist = document.getElementById('songArtist')
+        const playlistContainer = document.getElementById('playlistContainer')
+        const prevBtn = document.getElementById('prevBtn')
+        const nextBtn = document.getElementById('nextBtn')
+
+        let playlist = []
+        let currentIndex = 0
+
+        // Get backend URL based on current host
+        function getBackendURL() {
+            const host = window.location.hostname
+            return `http://${host}:8881`
+        }
+
+        // Load playlist from API
+        async function loadPlaylist() {
+            try {
+                const response = await fetch(`${getBackendURL()}/api/playlist`)
+                const data = await response.json()
+
+                if (data.success && data.data && Array.isArray(data.data)) {
+                    playlist = data.data
+                    console.log(`[Audio Player] Loaded ${playlist.length} songs`)
+                    renderPlaylist()
+                    playSong(0) // Play first song
+                } else {
+                    console.error('[Audio Player] No songs in playlist')
+                    songTitle.textContent = 'Nenhuma música na playlist'
+                }
+            } catch (err) {
+                console.error('[Audio Player] Error loading playlist:', err)
+                songTitle.textContent = 'Erro ao carregar playlist'
+            }
+        }
+
+        // Play song at index
+        function playSong(index) {
+            if (playlist.length === 0) return
+
+            currentIndex = index % playlist.length
+            const song = playlist[currentIndex]
+
+            console.log(`[Audio Player] Playing song ${currentIndex + 1}/${playlist.length}: ${song.title}`)
+
+            const audioUrl = `${getBackendURL()}/assets/music/${song.filename}`
+            audioPlayer.src = audioUrl
+            audioPlayer.loop = true
+
+            // Update display
+            songTitle.textContent = song.title || song.filename
+            songArtist.textContent = song.artist || 'Artista desconhecido'
+
+            // Update playlist highlight
+            document.querySelectorAll('.playlist-item').forEach((item, i) => {
+                if (i === currentIndex) {
+                    item.classList.add('playing')
+                } else {
+                    item.classList.remove('playing')
+                }
+            })
+
+            // Play immediately
+            audioPlayer.play().catch(err => {
+                console.error('[Audio Player] Error playing audio:', err)
+            })
+        }
+
+        // Render playlist in UI
+        function renderPlaylist() {
+            playlistContainer.innerHTML = ''
+            playlist.forEach((song, index) => {
+                const item = document.createElement('div')
+                item.className = 'playlist-item'
+                if (index === currentIndex) item.classList.add('playing')
+
+                item.innerHTML = `
+                    <div class="playlist-item-title">${index + 1}. ${song.title || song.filename}</div>
+                    <div class="playlist-item-artist">${song.artist || 'Artista desconhecido'}</div>
+                `
+
+                item.addEventListener('click', () => playSong(index))
+                playlistContainer.appendChild(item)
+            })
+        }
+
+        // Button controls
+        prevBtn.addEventListener('click', () => {
+            currentIndex = (currentIndex - 1 + playlist.length) % playlist.length
+            playSong(currentIndex)
+        })
+
+        nextBtn.addEventListener('click', () => {
+            currentIndex = (currentIndex + 1) % playlist.length
+            playSong(currentIndex)
+        })
+
+        // Auto-play next when current ends
+        audioPlayer.addEventListener('ended', () => {
+            currentIndex = (currentIndex + 1) % playlist.length
+            playSong(currentIndex)
+        })
+
+        // Load playlist on page load
+        window.addEventListener('load', loadPlaylist)
+
+        // Try to autoplay (may be blocked by browser)
+        setTimeout(() => {
+            audioPlayer.play().catch(err => {
+                console.log('[Audio Player] Autoplay prevented:', err)
+            })
+        }, 1000)
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# Ignore large media files but keep folder structure
+*
+!.gitignore
+!README.md
+!*/
+!*/.gitkeep
+

@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="google" content="notranslate" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Level Up Live - OBS View</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #scene-container {
+      width: 1920px;
+      height: 1080px;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+    }
+
+    .layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .layer img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: auto;
+      height: auto;
+    }
+
+    .event-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1000;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+    .fade-out {
+      animation: fadeOut 0.5s ease-out;
+    }
+
+    /* Level Up Animation */
+    .level-up-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(139,92,246,0.8) 0%, rgba(139,92,246,0) 70%);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: levelUpPulse 2s ease-in-out;
+      pointer-events: none;
+    }
+
+    .level-up-text {
+      font-size: 120px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 0 30px rgba(139,92,246,1), 0 0 60px rgba(139,92,246,0.8);
+      animation: levelUpBounce 2s ease-in-out;
+    }
+
+    @keyframes levelUpPulse {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+
+    @keyframes levelUpBounce {
+      0%, 100% { transform: scale(0.5); opacity: 0; }
+      50% { transform: scale(1.2); opacity: 1; }
+    }
+
+    /* XP Display */
+    #xp-display {
+      position: fixed;
+      top: 24px;
+      left: 24px;
+      z-index: 3000;
+      background-image: url('../assets/imagens/xp.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 49px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Poppins', 'Inter', sans-serif;
+      box-shadow: none;
+      width: auto;
+      height: auto;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    #xp-display .xp-label {
+      font-size: 12px;
+      color: #000;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #xp-display .xp-value {
+      font-size: 24px;
+      color: #000;
+      font-weight: 800;
+      text-shadow: none;
+      font-family: 'Poppins', sans-serif;
+      min-width: 45px;
+      text-align: right;
+    }
+
+    #xp-display .xp-next-label {
+      font-size: 12px;
+      color: #000;
+      font-weight: 700;
+      text-shadow: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #xp-display .xp-bar-container {
+      width: 300px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.3);
+      border: 2px solid #000;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: none;
+      flex-shrink: 0;
+    }
+
+    #xp-display .xp-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00FF00 0%, #00FFFF 50%, #FF00FF 100%);
+      transition: width 0.4s ease-out;
+      box-shadow: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #xp-display .xp-bar-fill::after {
+      display: none;
+    }
+
+    #xp-display .xp-percent {
+      font-size: 12px;
+      color: #000;
+      font-weight: 700;
+      text-shadow: none;
+      z-index: 10;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    #xp-display .xp-total {
+      font-size: 12px;
+      color: #000;
+      font-weight: 700;
+      text-shadow: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    @keyframes xpPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+
+    @keyframes barShine {
+      0% { background-position: -100px; }
+      100% { background-position: 300px; }
+    }
+
+    .xp-gain {
+      animation: xpPulse 0.3s ease-in-out;
+    }
+
+    .xp-gain .xp-bar-fill {
+      animation: barShine 0.6s ease-out;
+      background-size: 200% 100%;
+    }
+
+    /* Music Display - Bottom Center Box */
+    #music-display {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3000;
+      background-image: url('../assets/imagens/xp.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 49px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: 'Poppins', 'Inter', sans-serif;
+      box-shadow: none;
+      width: auto;
+      max-width: 600px;
+      overflow: hidden;
+    }
+
+    #music-display.hidden {
+      display: none;
+    }
+
+    #music-display .music-icon {
+      font-size: 18px;
+      color: #FF1493;
+      text-shadow: none;
+      flex-shrink: 0;
+    }
+
+    #music-display .music-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    #music-display .music-title {
+      font-size: 13px;
+      color: #000;
+      font-weight: 700;
+      text-shadow: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 250px;
+    }
+
+    #music-display .music-progress-bar {
+      width: 200px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.3);
+      border: 1px solid #000;
+      border-radius: 3px;
+      overflow: hidden;
+      box-shadow: none;
+    }
+
+    #music-display .music-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #FF1493 0%, #FF00FF 50%, #00FFFF 100%);
+      transition: width 0.3s linear;
+      box-shadow: none;
+      position: relative;
+    }
+
+    #music-display .music-progress-fill::after {
+      display: none;
+    }
+
+    #music-display .music-time {
+      font-size: 10px;
+      color: #000;
+      font-weight: 700;
+      text-shadow: none;
+      white-space: nowrap;
+      min-width: 50px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* XP Menu - Interacao Image */
+    #xp-menu {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 3000;
+      background-image: url('../assets/imagens/interacao.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      font-family: 'Poppins', 'Inter', sans-serif;
+      box-shadow: none;
+      min-width: 280px;
+      min-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #xp-menu .menu-title {
+      display: none;
+    }
+
+    #xp-menu .menu-items {
+      display: none;
+    }
+
+    #xp-menu .menu-item {
+      display: none;
+    }
+
+    #xp-menu .menu-item:hover {
+      display: none;
+    }
+
+    #xp-menu .menu-item-name {
+      display: none;
+    }
+
+    #xp-menu .menu-item-value {
+      display: none;
+    }
+
+    #xp-menu .menu-item-special {
+      display: none;
+    }
+
+    #xp-menu .menu-item-special .menu-item-value {
+      display: none;
+    }
+
+    #xp-menu .star-icon {
+      display: none;
+    }
+
+    @keyframes starPulse {
+      0%, 100% {
+        transform: scale(1) rotate(0deg);
+        filter: brightness(1);
+      }
+      50% {
+        transform: scale(1.15) rotate(10deg);
+        filter: brightness(1.3);
+      }
+    }
+
+    /* Live Stats Bar - Top Right */
+    #viewer-counter {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 3000;
+      font-family: 'Poppins', 'Inter', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      background-image: url('../assets/imagens/like.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border: none;
+      border-radius: 10px;
+      padding: 16px 49px;
+      box-shadow: none;
+      width: auto;
+      height: auto;
+      overflow: hidden;
+    }
+
+    #viewer-counter .stat-item {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #viewer-counter .stat-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+    }
+
+    /* Viewer Icon */
+    #viewer-counter .viewer-icon svg {
+      width: 100%;
+      height: 100%;
+      filter: none;
+    }
+
+    #viewer-counter .viewer-count {
+      font-size: 22px;
+      color: #000;
+      font-weight: 800;
+      text-shadow: none;
+    }
+
+    #viewer-counter .stat-label {
+      display: none;
+    }
+
+    #viewer-counter .likes-icon {
+      color: #FF1493;
+      text-shadow: none;
+    }
+
+    #viewer-counter .likes-count {
+      font-size: 22px;
+      color: #000;
+      font-weight: 800;
+      text-shadow: none;
+    }
+
+    #viewer-counter .subscribers-icon {
+      color: #FF00FF;
+      text-shadow: none;
+    }
+
+    #viewer-counter .subscribers-count {
+      font-size: 22px;
+      color: #000;
+      font-weight: 800;
+      text-shadow: none;
+    }
+
+    .viewer-join {
+      animation: viewerPulse 0.5s ease-in-out;
+    }
+
+    @keyframes viewerPulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="scene-container"></div>
+
+  <!-- XP Display -->
+  <div id="xp-display">
+    <div class="xp-label" id="xp-label">Nível: 1</div>
+    <div class="xp-next-label">Próximo:</div>
+    <div class="xp-bar-container">
+      <div class="xp-bar-fill" id="xp-bar-fill" style="width: 0%"></div>
+      <div class="xp-percent" id="xp-percent">0%</div>
+    </div>
+    <div class="xp-total" id="xp-total">XP: 0</div>
+  </div>
+
+  <!-- Music Display -->
+  <div id="music-display" class="hidden">
+    <div class="music-icon">♪</div>
+    <div class="music-info">
+      <div class="music-title" id="music-title">Nenhuma música</div>
+      <div class="music-progress-bar">
+        <div class="music-progress-fill" id="music-progress-fill" style="width: 0%"></div>
+      </div>
+    </div>
+    <div class="music-time" id="music-time">0:00 / 0:00</div>
+  </div>
+
+  <!-- XP Menu (Bottom-Right) -->
+  <div id="xp-menu">
+    <div class="menu-title">CARDÁPIO</div>
+    <div class="menu-items">
+      <div class="menu-item">
+        <div class="menu-item-name">Viewer</div>
+        <div class="menu-item-value">10 XP</div>
+      </div>
+      <div class="menu-item">
+        <div class="menu-item-name">Like</div>
+        <div class="menu-item-value">20 XP</div>
+      </div>
+      <div class="menu-item">
+        <div class="menu-item-name">Inscrito</div>
+        <div class="menu-item-value">50 XP</div>
+      </div>
+      <div class="menu-item menu-item-special">
+        <div class="menu-item-name">Donate</div>
+        <div class="menu-item-value">
+          Level Up
+          <span class="star-icon">★</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Stats Bar (Center) - Viewers | Likes | Subscribers -->
+  <div id="viewer-counter">
+    <!-- Viewers -->
+    <div class="stat-item">
+      <div class="stat-icon viewer-icon">👥</div>
+      <div class="viewer-count" id="viewer-count">0</div>
+      <div class="stat-label">Viewers</div>
+    </div>
+
+    <!-- Likes -->
+    <div class="stat-item">
+      <div class="stat-icon likes-icon">❤️</div>
+      <div class="likes-count" id="likes-count">0</div>
+      <div class="stat-label">Likes</div>
+    </div>
+
+    <!-- Subscribers -->
+    <div class="stat-item">
+      <div class="stat-icon subscribers-icon">⭐</div>
+      <div class="subscribers-count" id="subscribers-count">0</div>
+      <div class="stat-label">Inscritos</div>
+    </div>
+  </div>
+
+  <script>
+    // Get API base URL
+    const getApiBase = () => `http://${window.location.hostname}:8881`
+
+    // Connect to main server WebSocket
+    const socket = io(getApiBase())
+
+    let currentLevel = null
+    let currentXP = 0
+    let currentProgress = 0
+    let currentSong = null
+    let musicProgress = 0
+    let musicDuration = 0
+    let viewerCount = 0
+    let likesCount = 0
+    let subscribersCount = 0
+    let activeEventLayers = [] // Store active event layers
+
+    // Scene container
+    const sceneContainer = document.getElementById('scene-container')
+
+    // XP Display elements
+    const xpLabelEl = document.getElementById('xp-label')
+    const xpBarFillEl = document.getElementById('xp-bar-fill')
+    const xpPercentEl = document.getElementById('xp-percent')
+    const xpTotalEl = document.getElementById('xp-total')
+    const xpDisplayEl = document.getElementById('xp-display')
+
+    // Music Display elements
+    const musicDisplayEl = document.getElementById('music-display')
+    const musicTitleEl = document.getElementById('music-title')
+    const musicProgressFillEl = document.getElementById('music-progress-fill')
+    const musicTimeEl = document.getElementById('music-time')
+
+    // Live Stats elements
+    const viewerCountEl = document.getElementById('viewer-count')
+    const likesCountEl = document.getElementById('likes-count')
+    const subscribersCountEl = document.getElementById('subscribers-count')
+    const viewerCounterEl = document.getElementById('viewer-counter')
+
+    // Initialize
+    async function init() {
+      console.log('[Live View] Initializing...')
+
+      // Load current level
+      await loadCurrentLevel()
+
+      // Setup socket listeners
+      setupSocketListeners()
+      setupMusicListeners()
+
+      console.log('[Live View] Ready (Visual Only - No Audio)')
+    }
+
+    // Update XP Display
+    function updateXPDisplay(xp, progress, level) {
+      currentXP = xp || 0
+      currentProgress = progress || 0
+      const currentLevelNum = level || 1
+
+      // Calculate XP remaining until next level
+      let xpRemaining = 0
+      if (currentProgress > 0 && currentProgress < 100) {
+        const xpTotalForNextLevel = currentXP / (currentProgress / 100)
+        xpRemaining = Math.floor(xpTotalForNextLevel - currentXP)
+      } else if (currentProgress === 0) {
+        xpRemaining = 0 // Just started this level
+      }
+
+      xpLabelEl.textContent = `Nível: ${currentLevelNum}`
+      xpBarFillEl.style.width = `${Math.min(currentProgress, 100)}%`
+      xpPercentEl.textContent = `${Math.floor(currentProgress)}%`
+      xpTotalEl.textContent = `XP: ${xpRemaining}`
+
+      // Pulse animation on XP gain
+      xpDisplayEl.classList.add('xp-gain')
+      setTimeout(() => {
+        xpDisplayEl.classList.remove('xp-gain')
+      }, 300)
+    }
+
+    // Update Viewer Counter
+    function updateViewerCount(count) {
+      viewerCount = count || 0
+      viewerCountEl.textContent = viewerCount
+
+      // Pulse animation on viewer join
+      viewerCounterEl.classList.add('viewer-join')
+      setTimeout(() => {
+        viewerCounterEl.classList.remove('viewer-join')
+      }, 400)
+    }
+
+    // Increment viewer count (for testing)
+    function incrementViewerCount() {
+      updateViewerCount(viewerCount + 1)
+    }
+
+    // Update Likes Count
+    function updateLikesCount(count) {
+      likesCount = count || 0
+      likesCountEl.textContent = likesCount
+
+      // Pulse animation on like
+      viewerCounterEl.classList.add('viewer-join')
+      setTimeout(() => {
+        viewerCounterEl.classList.remove('viewer-join')
+      }, 400)
+    }
+
+    // Increment likes (for testing)
+    function incrementLikesCount() {
+      updateLikesCount(likesCount + 1)
+    }
+
+    // Update Subscribers Count
+    function updateSubscribersCount(count) {
+      subscribersCount = count || 0
+      subscribersCountEl.textContent = subscribersCount
+
+      // Pulse animation on new subscriber
+      viewerCounterEl.classList.add('viewer-join')
+      setTimeout(() => {
+        viewerCounterEl.classList.remove('viewer-join')
+      }, 400)
+    }
+
+    // Increment subscribers (for testing)
+    function incrementSubscribersCount() {
+      updateSubscribersCount(subscribersCount + 1)
+    }
+
+    // Load current level based on XP
+    async function loadCurrentLevel() {
+      try {
+        const apiBase = getApiBase()
+
+        const xpResponse = await fetch(`${apiBase}/api/xp/state`)
+        const xpData = await xpResponse.json()
+        const xp = xpData.currentXP || 0
+        const progress = xpData.progress || 0
+        const level = xpData.currentLevel || 1
+
+        // Update XP display
+        updateXPDisplay(xp, progress, level)
+
+        const levelsResponse = await fetch(`${apiBase}/api/levels/xp/${xp}`)
+        const levelData = await levelsResponse.json()
+
+        if (levelData.success && levelData.data) {
+          currentLevel = levelData.data
+          renderScene()
+          console.log(`[Live View] Loaded level: ${currentLevel.name}`)
+        }
+      } catch (err) {
+        console.error('[Live View] Failed to load level:', err)
+      }
+    }
+
+    // Load level by order number (more reliable for level-up events)
+    async function loadLevelByOrder(orderNum) {
+      try {
+        const levelsResponse = await fetch(`${getApiBase()}/api/levels/order/${orderNum}`)
+        const levelData = await levelsResponse.json()
+
+        if (levelData.success && levelData.data) {
+          currentLevel = levelData.data
+          renderScene()
+          console.log(`[Live View] Loaded level ${orderNum}: ${currentLevel.name}`)
+        } else {
+          console.error(`[Live View] Failed to load level ${orderNum}:`, levelData.error)
+        }
+      } catch (err) {
+        console.error(`[Live View] Failed to load level ${orderNum}:`, err)
+      }
+    }
+
+    // Render scene layers
+    function renderScene() {
+      if (!currentLevel) return
+
+      sceneContainer.innerHTML = ''
+      const layers = currentLevel.layers
+
+      // Helper to detect video files
+      function isVideoFile(filePath) {
+        const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.flv']
+        const ext = filePath.toLowerCase().substring(filePath.lastIndexOf('.'))
+        return videoExtensions.includes(ext)
+      }
+
+      // Render effects (all layers are in effects array now)
+      if (layers.effects && Array.isArray(layers.effects)) {
+        layers.effects.forEach((layer, index) => {
+          const layerDiv = document.createElement('div')
+          layerDiv.className = 'layer'
+          layerDiv.style.zIndex = index
+
+          // Apply transforms to the container div
+          const x = layer.x || 0
+          const y = layer.y || 0
+          const scale = layer.scale || 1 // Already a decimal, not percentage
+
+          // Set position and transform on the div
+          layerDiv.style.position = 'absolute'
+          layerDiv.style.left = '0'
+          layerDiv.style.top = '0'
+          layerDiv.style.transform = `translate(${x}px, ${y}px) scale(${scale})`
+          layerDiv.style.opacity = layer.opacity !== undefined ? layer.opacity : 1
+          layerDiv.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out'
+          layerDiv.style.transformOrigin = '0 0'
+
+          if (isVideoFile(layer.path)) {
+            // Render video in loop
+            const video = document.createElement('video')
+            video.src = `/${layer.path}`
+            video.autoplay = true
+            video.loop = true
+            video.muted = true
+            video.style.maxWidth = '100%'
+            video.style.maxHeight = '100%'
+            video.style.objectFit = 'contain'
+            video.style.display = 'block'
+
+            layerDiv.appendChild(video)
+          } else {
+            // Render static image
+            const img = document.createElement('img')
+            img.src = `/${layer.path}`
+            img.style.maxWidth = '100%'
+            img.style.maxHeight = '100%'
+            img.style.objectFit = 'contain'
+            img.style.display = 'block'
+
+            layerDiv.appendChild(img)
+          }
+
+          sceneContainer.appendChild(layerDiv)
+        })
+      }
+    }
+
+    // Setup socket listeners
+    function setupSocketListeners() {
+      // XP state updates
+      socket.on('xp:state', (data) => {
+        updateXPDisplay(data.currentXP, data.progress, data.currentLevel)
+      })
+
+      // XP added - detect if it's from viewer button (10 XP)
+      socket.on('xp:added', (data) => {
+        if (data.state) {
+          updateXPDisplay(data.state.currentXP, data.state.progress, data.state.currentLevel)
+
+          // If exactly 10 XP was added, it's likely a viewer join
+          if (data.xp === 10 && data.multiplier === 1) {
+            incrementViewerCount()
+          }
+        }
+      })
+
+      // XP reset
+      socket.on('xp:reset', (data) => {
+        updateXPDisplay(data.currentXP || 0, 0, data.currentLevel || 1)
+        updateViewerCount(0) // Reset viewer count too
+      })
+
+      // Level up event (visual only)
+      socket.on('level:up', (data) => {
+        console.log('[Live View] Level up!', data)
+        showLevelUpAnimation(data.newLevel)
+        // Load level by order (more reliable than by XP)
+        loadLevelByOrder(data.newLevel)
+      })
+
+      // Event triggered
+      socket.on('event:triggered', (data) => {
+        console.log('[Live View] Event triggered:', data)
+        showEventAnimation(data)
+      })
+
+      // Event ended (manual cleanup)
+      socket.on('event:ended', (data) => {
+        console.log('[Live View] Event ended:', data)
+        removeEventLayers(data.eventId)
+      })
+
+      socket.on('connect', () => {
+        console.log('[Live View] 🔌 Connected to server - Socket ID:', socket.id)
+      })
+
+      socket.on('disconnect', () => {
+        console.log('[Live View] ❌ Disconnected from server')
+      })
+
+      // Debug: listen to all events
+      socket.onAny((eventName, ...args) => {
+        console.log(`[Live View] 📡 Socket event received: ${eventName}`, args)
+      })
+    }
+
+    // Show level up animation
+    function showLevelUpAnimation(newLevel) {
+      const overlay = document.createElement('div')
+      overlay.className = 'level-up-overlay'
+
+      const text = document.createElement('div')
+      text.className = 'level-up-text'
+      text.textContent = `LEVEL ${newLevel}!`
+
+      overlay.appendChild(text)
+      document.body.appendChild(overlay)
+
+      setTimeout(() => {
+        document.body.removeChild(overlay)
+      }, 2000)
+    }
+
+    // Show event animation
+    function showEventAnimation(eventData) {
+      console.log('[Live View] Event animation:', eventData.name, eventData)
+
+      // Check if it's a procedural effect
+      if (eventData.effectType) {
+        console.log('[Live View] Rendering procedural effect:', eventData.effectType)
+        showProceduralEffect(eventData.effectType, eventData.duration, eventData.effectConfig || {})
+
+        // Play sounds (if any)
+        if (eventData.sounds && eventData.sounds.length > 0) {
+          eventData.sounds.forEach((soundPath) => {
+            const audio = new Audio(soundPath)
+            audio.volume = 0.7
+            audio.play().catch((err) => console.error('[Live View] Error playing event sound:', err))
+          })
+        }
+        return
+      }
+
+      // Check if event has assets (image/video layers)
+      if (!eventData.assets || !eventData.assets.layers) {
+        console.warn('[Live View] Event has no assets:', eventData.name)
+        return
+      }
+
+      // Render each event layer
+      eventData.assets.layers.forEach((layer) => {
+        const layerElement = renderEventLayer(layer, eventData.eventId, eventData.name)
+        sceneContainer.appendChild(layerElement)
+
+        // Store reference for cleanup
+        activeEventLayers.push({
+          eventId: eventData.eventId,
+          element: layerElement
+        })
+      })
+
+      // Play event sounds (if any)
+      if (eventData.assets.sounds && eventData.assets.sounds.length > 0) {
+        eventData.assets.sounds.forEach((soundPath) => {
+          const audio = new Audio(soundPath)
+          audio.volume = 0.7
+          audio.play().catch((err) => console.error('[Live View] Error playing event sound:', err))
+        })
+      }
+
+      // Schedule automatic removal after duration
+      setTimeout(() => {
+        removeEventLayers(eventData.eventId)
+      }, eventData.duration * 1000)
+    }
+
+    // Render a single event layer
+    function renderEventLayer(layer, eventId, eventName) {
+      const layerDiv = document.createElement('div')
+      layerDiv.className = 'event-layer'
+      layerDiv.setAttribute('data-event-id', eventId)
+      layerDiv.style.zIndex = layer.order || 100
+
+      // Apply transforms
+      const transform = layer.transform || {}
+      layerDiv.style.position = 'absolute'
+      layerDiv.style.left = `${transform.x || 0}px`
+      layerDiv.style.top = `${transform.y || 0}px`
+      layerDiv.style.width = `${transform.width || 1920}px`
+      layerDiv.style.height = `${transform.height || 1080}px`
+      layerDiv.style.opacity = transform.opacity || 1.0
+
+      if (transform.rotation) {
+        layerDiv.style.transform = `rotate(${transform.rotation}deg)`
+      }
+
+      // Helper to detect video files
+      function isVideoFile(filePath) {
+        const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.flv']
+        const ext = filePath.toLowerCase().substring(filePath.lastIndexOf('.'))
+        return videoExtensions.includes(ext)
+      }
+
+      // Create image or video element
+      if (isVideoFile(layer.source)) {
+        const video = document.createElement('video')
+        video.src = layer.source
+        video.style.width = '100%'
+        video.style.height = '100%'
+        video.style.objectFit = 'contain'
+        video.style.pointerEvents = 'none'
+        video.autoplay = true
+        video.loop = true
+        video.muted = true
+
+        layerDiv.appendChild(video)
+      } else {
+        const img = document.createElement('img')
+        img.src = layer.source
+        img.alt = eventName
+        img.style.width = '100%'
+        img.style.height = '100%'
+        img.style.objectFit = 'contain'
+        img.style.pointerEvents = 'none'
+
+        layerDiv.appendChild(img)
+      }
+
+      return layerDiv
+    }
+
+    // Remove event layers by event ID
+    function removeEventLayers(eventId) {
+      console.log('[Live View] Removing event layers for:', eventId)
+
+      // Find and remove elements
+      activeEventLayers = activeEventLayers.filter((item) => {
+        if (item.eventId === eventId) {
+          // Add fade-out animation
+          item.element.classList.add('fade-out')
+
+          // Remove after animation completes
+          setTimeout(() => {
+            if (item.element.parentNode) {
+              item.element.parentNode.removeChild(item.element)
+            }
+          }, 500) // Match animation duration
+
+          return false // Remove from active list
+        }
+        return true // Keep in active list
+      })
+    }
+
+    // ========================================================================
+    // PROCEDURAL EFFECTS (Canvas-based)
+    // ========================================================================
+    const DEFAULT_COLORS = ['#EC4899', '#8B5CF6', '#6366F1', '#F59E0B', '#10B981', '#EF4444']
+
+    function showProceduralEffect(effectType, duration, config = {}) {
+      console.log('[Live View] Showing procedural effect:', effectType)
+
+      const canvas = document.createElement('canvas')
+      canvas.width = 1920
+      canvas.height = 1080
+      canvas.style.position = 'absolute'
+      canvas.style.top = '0'
+      canvas.style.left = '0'
+      canvas.style.width = '100%'
+      canvas.style.height = '100%'
+      canvas.style.pointerEvents = 'none'
+      canvas.style.zIndex = '1000'
+      sceneContainer.appendChild(canvas)
+
+      const ctx = canvas.getContext('2d')
+      const particles = []
+      const rockets = []
+      const colors = config.colors || DEFAULT_COLORS
+      const startTime = Date.now()
+
+      let shakeOffsetX = 0
+      let shakeOffsetY = 0
+      let flashAlpha = 1
+      let waveOffset = 0
+
+      // Initialize effect
+      if (effectType === 'confetti') {
+        initConfetti(particles, colors, config.particleCount || 150)
+      } else if (effectType === 'particle-burst') {
+        initParticleBurst(particles, colors, config.particleCount || 100)
+      }
+
+      let animationId
+
+      function animate() {
+        const elapsed = Date.now() - startTime
+        const progress = elapsed / (duration * 1000)
+
+        if (progress >= 1) {
+          cancelAnimationFrame(animationId)
+          sceneContainer.removeChild(canvas)
+          return
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        switch (effectType) {
+          case 'confetti':
+            animateConfetti(ctx, particles, canvas)
+            break
+          case 'fireworks':
+            animateFireworks(ctx, particles, rockets, colors, canvas, elapsed)
+            break
+          case 'flash':
+            animateFlash(ctx, canvas, flashAlpha, colors)
+            flashAlpha = Math.max(0, flashAlpha - 0.05)
+            break
+          case 'particle-burst':
+            animateParticleBurst(ctx, particles, canvas)
+            break
+          case 'rainbow-wave':
+            animateRainbowWave(ctx, canvas, waveOffset)
+            waveOffset += 5
+            break
+          case 'screen-shake':
+            animateScreenShake(sceneContainer, shakeOffsetX, shakeOffsetY, progress, config.intensity || 20)
+            shakeOffsetX = (Math.random() - 0.5) * (config.intensity || 20)
+            shakeOffsetY = (Math.random() - 0.5) * (config.intensity || 20)
+            break
+        }
+
+        animationId = requestAnimationFrame(animate)
+      }
+
+      animate()
+    }
+
+    // Confetti
+    function initConfetti(particles, colors, count) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * 1920,
+          y: Math.random() * -500,
+          vx: (Math.random() - 0.5) * 3,
+          vy: Math.random() * 2 + 1,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          size: Math.random() * 8 + 4,
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 10,
+          alpha: 1,
+          life: 1
+        })
+      }
+    }
+
+    function animateConfetti(ctx, particles, canvas) {
+      particles.forEach((p) => {
+        p.x += p.vx
+        p.y += p.vy
+        p.vy += 0.15
+        p.rotation += p.rotationSpeed
+
+        if (p.x < 0 || p.x > canvas.width) {
+          p.vx *= -0.5
+        }
+
+        ctx.save()
+        ctx.translate(p.x, p.y)
+        ctx.rotate((p.rotation * Math.PI) / 180)
+        ctx.globalAlpha = p.alpha
+        ctx.fillStyle = p.color
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size)
+        ctx.restore()
+
+        if (p.y > canvas.height - 200) {
+          p.alpha = Math.max(0, p.alpha - 0.02)
+        }
+      })
+    }
+
+    // Fireworks
+    function animateFireworks(ctx, particles, rockets, colors, canvas, elapsed) {
+      if (elapsed % 400 < 16 && rockets.length < 5) {
+        const color = colors[Math.floor(Math.random() * colors.length)]
+        rockets.push({
+          x: Math.random() * canvas.width,
+          y: canvas.height,
+          vy: -(Math.random() * 8 + 12),
+          color: color,
+          exploded: false,
+          targetY: Math.random() * 300 + 200
+        })
+      }
+
+      rockets.forEach((rocket, index) => {
+        if (!rocket.exploded) {
+          rocket.y += rocket.vy
+          rocket.vy += 0.2
+
+          ctx.fillStyle = rocket.color
+          ctx.globalAlpha = 0.8
+          ctx.fillRect(rocket.x - 2, rocket.y, 4, 10)
+
+          if (rocket.y <= rocket.targetY) {
+            rocket.exploded = true
+            createFireworkExplosion(particles, rocket.x, rocket.y, rocket.color)
+            rockets.splice(index, 1)
+          }
+        }
+      })
+
+      particles.forEach((p, index) => {
+        p.x += p.vx
+        p.y += p.vy
+        p.vy += 0.1
+        p.alpha -= 0.01
+        p.life -= 0.01
+
+        if (p.life <= 0) {
+          particles.splice(index, 1)
+          return
+        }
+
+        ctx.globalAlpha = p.alpha
+        ctx.fillStyle = p.color
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+        ctx.fill()
+      })
+
+      ctx.globalAlpha = 1
+    }
+
+    function createFireworkExplosion(particles, x, y, color) {
+      const particleCount = 80
+      for (let i = 0; i < particleCount; i++) {
+        const angle = (Math.PI * 2 * i) / particleCount
+        const speed = Math.random() * 5 + 3
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color: color,
+          size: Math.random() * 3 + 2,
+          alpha: 1,
+          life: 1
+        })
+      }
+    }
+
+    // Flash
+    function animateFlash(ctx, canvas, alpha, colors) {
+      ctx.globalAlpha = alpha
+      ctx.fillStyle = colors[0] || '#FFFFFF'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.globalAlpha = 1
+    }
+
+    // Particle Burst
+    function initParticleBurst(particles, colors, count) {
+      const centerX = 1920 / 2
+      const centerY = 1080 / 2
+
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count
+        const speed = Math.random() * 8 + 4
+        particles.push({
+          x: centerX,
+          y: centerY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          size: Math.random() * 6 + 3,
+          alpha: 1,
+          life: 1
+        })
+      }
+    }
+
+    function animateParticleBurst(ctx, particles, canvas) {
+      particles.forEach((p) => {
+        p.x += p.vx
+        p.y += p.vy
+        p.alpha -= 0.015
+        p.life -= 0.015
+
+        ctx.globalAlpha = p.alpha * 0.3
+        ctx.strokeStyle = p.color
+        ctx.lineWidth = p.size
+        ctx.beginPath()
+        ctx.moveTo(p.x, p.y)
+        ctx.lineTo(p.x - p.vx * 3, p.y - p.vy * 3)
+        ctx.stroke()
+
+        ctx.globalAlpha = p.alpha
+        ctx.fillStyle = p.color
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+        ctx.fill()
+      })
+      ctx.globalAlpha = 1
+    }
+
+    // Rainbow Wave
+    function animateRainbowWave(ctx, canvas, offset) {
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0)
+      const colors = ['#EC4899', '#8B5CF6', '#6366F1', '#10B981', '#F59E0B', '#EF4444']
+
+      colors.forEach((color, i) => {
+        const position = ((i / colors.length + offset / canvas.width) % 1)
+        gradient.addColorStop(position, color)
+      })
+
+      ctx.globalAlpha = 0.4
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.globalAlpha = 1
+    }
+
+    // Screen Shake
+    function animateScreenShake(container, offsetX, offsetY, progress, intensity) {
+      const actualIntensity = intensity * (1 - progress)
+      container.style.transform = `translate(${offsetX * actualIntensity}px, ${offsetY * actualIntensity}px)`
+    }
+
+    // Format time from seconds to MM:SS
+    function formatTime(seconds) {
+      if (!seconds || isNaN(seconds)) return '0:00'
+      const mins = Math.floor(seconds / 60)
+      const secs = Math.floor(seconds % 60)
+      return `${mins}:${secs.toString().padStart(2, '0')}`
+    }
+
+    // Update Music Display
+    function updateMusicDisplay(song, progress, duration) {
+      if (!song) {
+        musicDisplayEl.classList.add('hidden')
+        return
+      }
+
+      currentSong = song
+      musicProgress = progress || 0
+      musicDuration = duration || song.duration || 0
+
+      // Show display
+      musicDisplayEl.classList.remove('hidden')
+
+      // Update title
+      const title = song.title || song.filename || 'Sem título'
+      musicTitleEl.textContent = title
+
+      // Update progress bar
+      const progressPercent = musicDuration > 0 ? (musicProgress / musicDuration) * 100 : 0
+      musicProgressFillEl.style.width = `${Math.min(progressPercent, 100)}%`
+
+      // Update time
+      musicTimeEl.textContent = `${formatTime(musicProgress)} / ${formatTime(musicDuration)}`
+    }
+
+    // Progress tracking interval
+    let musicInterval = null
+
+    function startMusicTracking() {
+      if (musicInterval) clearInterval(musicInterval)
+
+      musicInterval = setInterval(() => {
+        if (currentSong && musicDuration > 0) {
+          musicProgress += 1
+
+          // Update progress bar
+          const progressPercent = (musicProgress / musicDuration) * 100
+          musicProgressFillEl.style.width = `${Math.min(progressPercent, 100)}%`
+
+          // Update time
+          musicTimeEl.textContent = `${formatTime(musicProgress)} / ${formatTime(musicDuration)}`
+
+          // Stop tracking if song ended
+          if (musicProgress >= musicDuration) {
+            stopMusicTracking()
+          }
+        }
+      }, 1000)
+    }
+
+    function stopMusicTracking() {
+      if (musicInterval) {
+        clearInterval(musicInterval)
+        musicInterval = null
+      }
+    }
+
+    // Setup music socket listeners
+    function setupMusicListeners() {
+      // Now playing event
+      socket.on('audio:nowplaying', (data) => {
+        console.log('[Live View] Now playing:', data)
+        updateMusicDisplay(data.song, data.currentTime || 0, data.song?.duration)
+        startMusicTracking()
+      })
+
+      // Audio state updates
+      socket.on('audio:state', (data) => {
+        console.log('[Live View] Audio state:', data)
+
+        if (data.isPlaying && data.currentSong) {
+          updateMusicDisplay(data.currentSong, data.currentTime || 0, data.currentSong.duration)
+          startMusicTracking()
+        } else {
+          stopMusicTracking()
+          if (!data.currentSong) {
+            musicDisplayEl.classList.add('hidden')
+          }
+        }
+      })
+
+      // Audio paused
+      socket.on('audio:paused', () => {
+        console.log('[Live View] Audio paused')
+        stopMusicTracking()
+      })
+
+      // Audio stopped
+      socket.on('audio:stopped', () => {
+        console.log('[Live View] Audio stopped')
+        stopMusicTracking()
+        musicDisplayEl.classList.add('hidden')
+        currentSong = null
+        musicProgress = 0
+        musicDuration = 0
+      })
+
+      // Audio ended
+      socket.on('audio:ended', () => {
+        console.log('[Live View] Audio ended')
+        stopMusicTracking()
+        musicDisplayEl.classList.add('hidden')
+        currentSong = null
+        musicProgress = 0
+        musicDuration = 0
+      })
+    }
+
+    // Initialize on page load
+    window.addEventListener('load', init)
+  </script>
+</body>
+</html>

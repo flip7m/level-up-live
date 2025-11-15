@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: levelup-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-levelup_live}
+      POSTGRES_USER: ${POSTGRES_USER:-levelup_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-levelup_dev_2024}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT_EXTERNAL:-8010}:5432"
+    volumes:
+      - levelup-postgres-data:/var/lib/postgresql/data
+    networks:
+      - levelup-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-levelup_user} -d ${POSTGRES_DB:-levelup_live}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      com.example.description: "Level Up PostgreSQL Database"
+
+  # Level Up Live Backend + Frontend
+  levelup-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: levelup-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Server Config
+      PORT: "8881"
+      NODE_ENV: ${NODE_ENV:-production}
+
+      # Paths (relative to /app inside container)
+      ASSETS_PATH: ./assets
+      DATA_PATH: ./data
+      MUSIC_PATH: ./assets/music
+      SCENES_PATH: ./assets/scenes
+      SOUNDS_PATH: ./assets/sounds
+
+      # Database - PostgreSQL
+      # IMPORTANT: Use 'postgres' (service name) as hostname, not 'localhost'
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-levelup_live}
+      POSTGRES_USER: ${POSTGRES_USER:-levelup_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-levelup_dev_2024}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-levelup_user}:${POSTGRES_PASSWORD:-levelup_dev_2024}@postgres:5432/${POSTGRES_DB:-levelup_live}
+
+      # Audio Configuration
+      DEFAULT_MUSIC_VOLUME: ${DEFAULT_MUSIC_VOLUME:-0.7}
+      DEFAULT_SFX_VOLUME: ${DEFAULT_SFX_VOLUME:-0.8}
+
+      # XP Rates (test mode)
+      XP_RATE_AUDIO_DROP: ${XP_RATE_AUDIO_DROP:-2}
+      XP_RATE_AUDIO_BUILD: ${XP_RATE_AUDIO_BUILD:-1}
+    ports:
+      - "${BACKEND_PORT:-8881}:8881"
+      - "${LIVE_VIEW_PORT:-8020}:8020"
+    volumes:
+      # Bind mounts for persistent data
+      - ./assets:/app/assets
+      - ./data:/app/data
+    networks:
+      - levelup-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8881/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    labels:
+      com.example.description: "Level Up Live - Backend API, WebSocket & Frontend"
+
+volumes:
+  levelup-postgres-data:
+    driver: local
+    labels:
+      com.example.description: "PostgreSQL persistent data volume"
+
+networks:
+  levelup-network:
+    driver: bridge
+    labels:
+      com.example.description: "Isolated network for Level Up services"
